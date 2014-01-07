@@ -10,6 +10,7 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/dbachrach/OCUDL.git", :tag => s.version.to_s }
   s.source_files = 'Classes', 'Classes/**/*.{h,m}'
   s.requires_arc = true
-  s.platform     = :ios
+  s.osx.deployment_target = '10.8'
+  s.ios.deployment_target = '6.0'
 
 end

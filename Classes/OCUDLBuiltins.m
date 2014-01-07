@@ -14,10 +14,17 @@
 + (void)registerNSNull;
 + (void)registerNSURL;
 + (void)registerNSUUID;
++ (void)registerNSDecimalNumber;
+#if ( TARGET_OS_IPHONE==1 || TARGET_IPHONE_SIMULATOR==1 )
 + (void)registerUIColor;
 + (void)registerUIImage;
 + (void)registerUINib;
 + (void)registerUIStoryboard;
+#else
++ (void)registerNSColor;
++ (void)registerNSImage;
++ (void)registerNSNib;
+#endif
 
 @end
 
@@ -47,6 +54,8 @@
 											 return [[NSUUID alloc] initWithUUIDString:literal];
 										 }];
 }
+
+#if ( TARGET_OS_IPHONE==1 || TARGET_IPHONE_SIMULATOR==1 )
 
 + (void)registerUIColor
 {
@@ -163,6 +172,139 @@
 											 return [UIStoryboard storyboardWithName:literal bundle:nil];
 										 }];
 }
+#else
++ (void)registerNSColor
+{
+	[[OCUDLManager defaultManager] registerPrefix:@"#"
+										 forBlock:^id(NSString *literal, NSString *prefix) {
+											 unsigned int value = 0;
+                                             if([literal rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"."]].location!=NSNotFound)
+                                             {
+                                                 NSArray* components = [literal componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"."]];
+                                                 if(components.count==3)
+                                                     return [NSColor colorWithSRGBRed:((float)([components[0] integerValue])) / 255.0
+                                                                                green:((float)([components[1] integerValue])) / 255.0
+                                                                                 blue:((float)([components[2] integerValue])) / 255.0
+                                                                                alpha:1.0];
+                                                 else if(components.count==4)
+                                                     return [NSColor colorWithSRGBRed:((float)([components[0] integerValue])) / 255.0
+                                                                                green:((float)([components[1] integerValue])) / 255.0
+                                                                                 blue:((float)([components[2] integerValue])) / 255.0
+                                                                                alpha:((float)([components[3] integerValue])) / 100.0];
+                                                 // fall back to original
+                                             }
+											 if ([[NSScanner scannerWithString:literal] scanHexInt:&value])
+											 {
+												 if (literal.length == 6)
+												 {
+													 return [NSColor colorWithSRGBRed:((float)((value & 0xFF0000) >> 16)) / 255.0
+                                                                                green:((float)((value & 0x00FF00) >> 8)) / 255.0
+                                                                                 blue:((float)(value & 0x0000FF)) / 255.0
+                                                                                alpha:1.0];
+												 }
+												 else if (literal.length == 3)
+												 {
+													 return [NSColor colorWithSRGBRed:((float)((value & 0xF00) >> 8)) / 15.0
+                                                                                green:((float)((value & 0x0F0) >> 4)) / 15.0
+                                                                                 blue:((float)(value & 0x00F)) / 15.0
+                                                                                alpha:1.0];
+												 }
+											 }
+											 else
+											 {
+												 if ([literal caseInsensitiveCompare:@"black"] == NSOrderedSame)
+												 {
+													 return [NSColor blackColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"darkGray"] == NSOrderedSame)
+												 {
+													 return [NSColor darkGrayColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"lightGray"] == NSOrderedSame)
+												 {
+													 return [NSColor lightGrayColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"white"] == NSOrderedSame)
+												 {
+													 return [NSColor whiteColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"gray"] == NSOrderedSame)
+												 {
+													 return [NSColor grayColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"red"] == NSOrderedSame)
+												 {
+													 return [NSColor redColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"green"] == NSOrderedSame)
+												 {
+													 return [NSColor greenColor];
+												 }
+												 
+												 else if ([literal caseInsensitiveCompare:@"blue"] == NSOrderedSame)
+												 {
+													 return [NSColor blueColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"cyan"] == NSOrderedSame)
+												 {
+													 return [NSColor cyanColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"yellow"] == NSOrderedSame)
+												 {
+													 return [NSColor yellowColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"magenta"] == NSOrderedSame)
+												 {
+													 return [NSColor magentaColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"orange"] == NSOrderedSame)
+												 {
+													 return [NSColor orangeColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"purple"] == NSOrderedSame)
+												 {
+													 return [NSColor purpleColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"brown"] == NSOrderedSame)
+												 {
+													 return [NSColor brownColor];
+												 }
+												 else if ([literal caseInsensitiveCompare:@"clear"] == NSOrderedSame)
+												 {
+													 return [NSColor clearColor];
+												 }
+											 }
+											 return nil;
+										 }];
+    
+}
+
++ (void)registerNSImage
+{
+	[[OCUDLManager defaultManager] registerSuffix:@".img"
+										 forBlock:^id(NSString *literal, NSString *prefix) {
+											 return [NSImage imageNamed:literal];
+										 }];
+}
+
++ (void)registerNSNib
+{
+	[[OCUDLManager defaultManager] registerSuffix:@".xib"
+										 forBlock:^id(NSString *literal, NSString *prefix) {
+                                             return [[NSNib alloc] initWithNibNamed:literal bundle:nil];
+										 }];
+}
+#endif
+
++ (void)registerNSDecimalNumber
+{
+	[[OCUDLManager defaultManager] registerPrefix:@"$"
+										 forBlock:^id(NSString *literal, NSString *prefix) {
+                                             NSDecimalNumber* dn = [NSDecimalNumber decimalNumberWithString:literal];
+											 return dn;
+										 }];
+}
+
 
 static dispatch_once_t s_pred;
 
@@ -172,10 +314,17 @@ static dispatch_once_t s_pred;
 		[OCUDLBuiltins registerNSNull];
 		[OCUDLBuiltins registerNSURL];
 		[OCUDLBuiltins registerNSUUID];
+#if ( TARGET_OS_IPHONE==1 || TARGET_IPHONE_SIMULATOR==1 )
 		[OCUDLBuiltins registerUIColor];
 		[OCUDLBuiltins registerUIImage];
 		[OCUDLBuiltins registerUINib];
 		[OCUDLBuiltins registerUIStoryboard];
+#else
+		[OCUDLBuiltins registerNSColor];
+		[OCUDLBuiltins registerNSImage];
+		[OCUDLBuiltins registerNSNib];
+#endif
+        [OCUDLBuiltins registerNSDecimalNumber];
 	});
 }
 
